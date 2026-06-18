@@ -295,7 +295,10 @@ class DefaultLLMAgent(BaseAgent):
             "claim every played card is the target card, but may bluff. Jokers "
             "count as valid target cards. A challenge succeeds if any revealed "
             "played card is neither the target card nor Joker. The loser fires "
-            "their own revolver."
+            "their own revolver. The deck is not a standard card deck. Each "
+            "round uses a 20-card deck: 6 Queens, 6 Kings, 6 Aces, and 2 "
+            "Jokers. Each alive player is dealt 5 cards at the start of the "
+            "round."
         )
 
     @staticmethod
