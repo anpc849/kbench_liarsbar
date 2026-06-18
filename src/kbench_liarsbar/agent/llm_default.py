@@ -277,8 +277,9 @@ class DefaultLLMAgent(BaseAgent):
         other_players = [name for name in context.alive_players if name != context.player_name]
         return (
             "You are updating private opponent impressions for future Liars Bar "
-            "rounds. Use only the public history and revealed information shown "
-            "below. Do not invent hidden hands or bullet positions.\n\n"
+            "rounds. Use only the public history, revealed information, your "
+            "private decision history, and your private opinions shown below. "
+            "Do not invent hidden hands or bullet positions.\n\n"
             f"{context.to_text()}\n\n"
             "Return only a JSON object, no markdown, with this shape:\n"
             '{"opinions": {"Opponent Name": "brief strategy impression"}}\n'
