@@ -31,6 +31,7 @@ class AgentContext:
     target_card: str | None
     hand: list[str]
     own_shots_taken: int
+    revolver_chambers: int
     alive_players: list[str]
     public_history: list[dict[str, Any]]
     legal_cards: list[str] = field(default_factory=list)
@@ -63,8 +64,13 @@ class AgentContext:
                     "- "
                     f"{item['challenger']} challenged {item['challenged_player']}; "
                     f"success={item['challenge_success']}; "
-                    f"revealed={', '.join(item.get('revealed_cards', []))}; "
-                    f"reason: {item.get('reason', '')}"
+                    f"revealed={', '.join(item.get('revealed_cards', []))}"
+                )
+            elif kind == "no_challenge":
+                rows.append(
+                    "- "
+                    f"{item['challenger']} did not challenge "
+                    f"{item['challenged_player']}"
                 )
             elif kind == "shot":
                 rows.append(
@@ -81,7 +87,7 @@ class AgentContext:
                     f"starting_player={item['starting_player']}"
                 )
             else:
-                rows.append(f"- {item}")
+                rows.append(f"- Public event: {kind}")
         return "\n".join(rows)
 
     def opinions_text(self) -> str:
@@ -109,7 +115,7 @@ class AgentContext:
             f"Round: {self.round_id}\n"
             f"Target card: {self.target_card}\n"
             f"Your hand: {', '.join(self.hand) if self.hand else 'empty'}\n"
-            f"Your shots taken: {self.own_shots_taken}\n"
+            f"Your shots taken: {self.own_shots_taken} of {self.revolver_chambers}\n"
             f"Alive players: {', '.join(self.alive_players)}\n"
             f"Next player: {self.next_player or 'None'}\n"
             f"Legal cards to play: {self.legal_cards_text()}\n"

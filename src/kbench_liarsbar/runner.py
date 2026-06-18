@@ -225,7 +225,6 @@ class LiarsBarGame:
                 "challenged_player": current.name,
                 "challenge_success": challenge_success,
                 "revealed_cards": list(play.played_cards),
-                "reason": challenge.challenge_reason,
             }
             self.public_history.append(challenge_event)
             self._record_replay({**challenge_event, "private": False})
@@ -238,7 +237,6 @@ class LiarsBarGame:
             "round_id": self.round_id,
             "challenger": next_player.name,
             "challenged_player": current.name,
-            "reason": challenge.challenge_reason,
         }
         self.public_history.append(no_challenge_event)
         self._record_replay({**no_challenge_event, "private": False})
@@ -416,6 +414,7 @@ class LiarsBarGame:
             target_card=self.target_card,
             hand=list(player.hand),
             own_shots_taken=player.shots_taken,
+            revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
             legal_cards=list(player.hand),
@@ -443,6 +442,7 @@ class LiarsBarGame:
             target_card=self.target_card,
             hand=list(challenger.hand),
             own_shots_taken=challenger.shots_taken,
+            revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
             previous_play=dict(previous_play),
@@ -459,6 +459,7 @@ class LiarsBarGame:
             target_card=self.target_card,
             hand=list(player.hand),
             own_shots_taken=player.shots_taken,
+            revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
             opinions=dict(player.opinions),

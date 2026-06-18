@@ -223,6 +223,35 @@ def test_failed_challenge_penalizes_challenger():
     assert challenger.shots_taken == 1
 
 
+def test_challenge_reason_is_private_not_public_history():
+    game = LiarsBarGame(
+        game_config=make_config(
+            FixedPlayAgent(["Q"]),
+            FixedPlayAgent(["K"], challenge=True),
+            revolver_chambers=3,
+        )
+    )
+    player, challenger = game.players
+    game.round_id = 1
+    game.target_card = "Q"
+    game.current_player_idx = 0
+    player.hand = ["Q"]
+    challenger.hand = ["K"]
+    challenger.bullet_position = 2
+    challenger.chamber_position = 0
+
+    game.play_turn()
+
+    challenge = next(event for event in game.public_history if event["type"] == "challenge")
+    decision = next(
+        event
+        for event in game.decision_log
+        if event["phase"] == "challenge" and event["player"] == challenger.name
+    )
+    assert "reason" not in challenge
+    assert "deterministic test challenge" in decision["decision"]["challenge_reason"]
+
+
 def test_winner_is_set_when_penalty_eliminates_player():
     game = LiarsBarGame(
         game_config=make_config(
@@ -262,6 +291,32 @@ def test_turn_moves_to_next_player_after_no_challenge():
     assert game.current_player_idx == 1
     assert player.hand == ["A"]
     assert game.public_history[-1]["type"] == "no_challenge"
+    assert "reason" not in game.public_history[-1]
+
+
+def test_no_challenge_reason_is_not_leaked_to_future_prompt():
+    game = LiarsBarGame(
+        game_config=make_config(
+            FixedPlayAgent(["Q"]),
+            FixedPlayAgent(["K"], challenge=False),
+            revolver_chambers=4,
+        )
+    )
+    player, next_player = game.players
+    game.round_id = 1
+    game.target_card = "Q"
+    game.current_player_idx = 0
+    player.hand = ["Q", "A"]
+    next_player.hand = ["K"]
+
+    game.play_turn()
+
+    context = game.build_play_context(next_player, player)
+    prompt_text = context.to_text()
+    assert "deterministic test challenge" not in prompt_text
+    assert "{'type': 'no_challenge'" not in prompt_text
+    assert "Player 2 did not challenge Player 1" in prompt_text
+    assert "Your shots taken: 0 of 4" in prompt_text
 
 
 def test_surviving_shooter_starts_next_round_after_penalty():
