@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kbench-liarsbar"
+version = "0.1.0"
+description = "Configurable Liars Bar environment for Kaggle Benchmarks LLM agents."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "Faker",
+    "gradio",
+]
+
+[project.scripts]
+kbench_liarsbar_gradio = "kbench_liarsbar.gradio_app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["kbench_liarsbar*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
