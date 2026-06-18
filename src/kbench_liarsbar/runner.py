@@ -417,6 +417,7 @@ class LiarsBarGame:
             revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
+            private_decision_history=self._private_decision_history_for(player.name),
             legal_cards=list(player.hand),
             legal_card_counts=list(range(1, min(3, len(player.hand)) + 1)),
             next_player=next_player.name,
@@ -445,6 +446,7 @@ class LiarsBarGame:
             revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
+            private_decision_history=self._private_decision_history_for(challenger.name),
             previous_play=dict(previous_play),
             next_player=challenged.name,
             opinions=dict(challenger.opinions),
@@ -462,8 +464,16 @@ class LiarsBarGame:
             revolver_chambers=self.config.revolver_chambers,
             alive_players=[p.name for p in self.players if p.alive],
             public_history=list(self.public_history),
+            private_decision_history=self._private_decision_history_for(player.name),
             opinions=dict(player.opinions),
         )
+
+    def _private_decision_history_for(self, player_name: str) -> list[dict[str, Any]]:
+        return [
+            dict(event)
+            for event in self.decision_log
+            if player_name in event.get("visible_to", [])
+        ]
 
     def result_summary(self) -> dict[str, Any]:
         has_human = any(

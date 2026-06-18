@@ -294,7 +294,7 @@ def test_turn_moves_to_next_player_after_no_challenge():
     assert "reason" not in game.public_history[-1]
 
 
-def test_no_challenge_reason_is_not_leaked_to_future_prompt():
+def test_no_challenge_reason_is_only_in_owner_private_prompt():
     game = LiarsBarGame(
         game_config=make_config(
             FixedPlayAgent(["Q"]),
@@ -311,12 +311,18 @@ def test_no_challenge_reason_is_not_leaked_to_future_prompt():
 
     game.play_turn()
 
-    context = game.build_play_context(next_player, player)
-    prompt_text = context.to_text()
-    assert "deterministic test challenge" not in prompt_text
-    assert "{'type': 'no_challenge'" not in prompt_text
-    assert "Player 2 did not challenge Player 1" in prompt_text
-    assert "Your shots taken: 0 of 4" in prompt_text
+    next_player_context = game.build_play_context(next_player, player)
+    next_player_prompt = next_player_context.to_text()
+    player_context = game.build_play_context(player, next_player)
+    player_prompt = player_context.to_text()
+
+    assert "deterministic test challenge" in next_player_prompt
+    assert "deterministic test play" not in next_player_prompt
+    assert "deterministic test challenge" not in player_prompt
+    assert "deterministic test play" in player_prompt
+    assert "{'type': 'no_challenge'" not in next_player_prompt
+    assert "Player 2 did not challenge Player 1" in next_player_prompt
+    assert "has a 25% chance to eliminate you" in next_player_prompt
 
 
 def test_surviving_shooter_starts_next_round_after_penalty():

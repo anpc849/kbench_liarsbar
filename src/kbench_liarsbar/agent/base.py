@@ -34,6 +34,7 @@ class AgentContext:
     revolver_chambers: int
     alive_players: list[str]
     public_history: list[dict[str, Any]]
+    private_decision_history: list[dict[str, Any]] = field(default_factory=list)
     legal_cards: list[str] = field(default_factory=list)
     legal_card_counts: list[int] = field(default_factory=list)
     next_player: str | None = None
@@ -97,6 +98,53 @@ class AgentContext:
             f"- {name}: {opinion}" for name, opinion in sorted(self.opinions.items())
         )
 
+    def private_decision_history_text(self) -> str:
+        if not self.private_decision_history:
+            return "- No prior private decisions."
+        rows = []
+        for item in self.private_decision_history[-8:]:
+            phase = item.get("phase", "decision")
+            decision = item.get("decision", {})
+            if phase == "play":
+                played = ", ".join(decision.get("played_cards", [])) or "None"
+                rows.append(
+                    "- "
+                    f"Round {item.get('round_id')}, turn {item.get('turn')}: "
+                    f"you played {played}. "
+                    f"Private play_reason: {decision.get('play_reason', '')}"
+                )
+            elif phase == "challenge":
+                action = (
+                    "challenged"
+                    if decision.get("was_challenged")
+                    else "did not challenge"
+                )
+                rows.append(
+                    "- "
+                    f"Round {item.get('round_id')}, turn {item.get('turn')}: "
+                    f"you {action}. "
+                    "Private challenge_reason: "
+                    f"{decision.get('challenge_reason', '')}"
+                )
+            else:
+                rows.append(
+                    "- "
+                    f"Round {item.get('round_id')}, turn {item.get('turn')}: "
+                    f"private {phase} decision."
+                )
+        return "\n".join(rows)
+
+    def revolver_status_text(self) -> str:
+        remaining = max(self.revolver_chambers - self.own_shots_taken, 1)
+        risk_percent = 100 / remaining
+        risk_text = f"{risk_percent:.1f}".rstrip("0").rstrip(".")
+        return (
+            f"{self.own_shots_taken} of {self.revolver_chambers} chambers have "
+            "already been fired; each penalty shot advances to the next chamber. "
+            "One hidden chamber contains the bullet, so your next penalty shot "
+            f"has a {risk_text}% chance to eliminate you."
+        )
+
     def to_text(self) -> str:
         previous = self.previous_play or {}
         previous_text = (
@@ -115,7 +163,7 @@ class AgentContext:
             f"Round: {self.round_id}\n"
             f"Target card: {self.target_card}\n"
             f"Your hand: {', '.join(self.hand) if self.hand else 'empty'}\n"
-            f"Your shots taken: {self.own_shots_taken} of {self.revolver_chambers}\n"
+            f"Your revolver status: {self.revolver_status_text()}\n"
             f"Alive players: {', '.join(self.alive_players)}\n"
             f"Next player: {self.next_player or 'None'}\n"
             f"Legal cards to play: {self.legal_cards_text()}\n"
@@ -123,6 +171,8 @@ class AgentContext:
             f"Previous play: {previous_text}\n"
             f"Extra hint: {self.extra_hint or 'None'}\n\n"
             f"Public history:\n{self.public_history_text()}\n\n"
+            "Your private decision history:\n"
+            f"{self.private_decision_history_text()}\n\n"
             f"Your private opinions:\n{self.opinions_text()}"
         )
 
