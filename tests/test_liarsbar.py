@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import sys
+from types import SimpleNamespace
+
 import pytest
 
 from kbench_liarsbar import (
@@ -625,6 +628,52 @@ def test_default_llm_agent_uses_five_retries_by_default():
     agent = DefaultLLMAgent(ReflectionLLM([]), llm_pause_seconds=0)
 
     assert agent.max_retries == 5
+
+
+def test_default_llm_agent_uses_nested_visible_chat(monkeypatch):
+    calls = []
+    state = {"active": False}
+
+    class FakeChatContext:
+        def __init__(self, name, orphan):
+            self.name = name
+            self.orphan = orphan
+
+        def __enter__(self):
+            calls.append((self.name, self.orphan))
+            state["active"] = True
+
+        def __exit__(self, exc_type, exc, tb):
+            state["active"] = False
+
+    class FakeChats:
+        @staticmethod
+        def new(name, orphan):
+            return FakeChatContext(name, orphan)
+
+    class ChatAwareLLM:
+        def prompt(self, prompt, schema=str):
+            assert state["active"] is True
+            return "ok"
+
+    monkeypatch.setitem(
+        sys.modules,
+        "kaggle_benchmarks",
+        SimpleNamespace(chats=FakeChats),
+    )
+    agent = DefaultLLMAgent(ChatAwareLLM(), llm_pause_seconds=0)
+    context = SimpleNamespace(player_name="Mira")
+
+    result = agent._prompt_llm(
+        context=context,
+        phase="play",
+        attempt=0,
+        prompt="private prompt",
+        schema=str,
+    )
+
+    assert result == "ok"
+    assert calls == [("liarsbar-Mira-play-attempt-1", False)]
 
 
 def test_reflection_retries_with_error_hint_and_parses_json():

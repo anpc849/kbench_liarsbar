@@ -49,8 +49,11 @@ class DefaultLLMAgent(BaseAgent):
         last_raw = None
         for attempt in range(self.max_retries + 1):
             try:
-                raw = self.llm.prompt(
-                    self._play_prompt(context, retry_note),
+                raw = self._prompt_llm(
+                    context=context,
+                    phase="play",
+                    attempt=attempt,
+                    prompt=self._play_prompt(context, retry_note),
                     schema=LLMPlayDecision,
                 )
                 self._sleep_after_llm_call()
@@ -91,8 +94,11 @@ class DefaultLLMAgent(BaseAgent):
         last_raw = None
         for attempt in range(self.max_retries + 1):
             try:
-                raw = self.llm.prompt(
-                    self._challenge_prompt(context, retry_note),
+                raw = self._prompt_llm(
+                    context=context,
+                    phase="challenge",
+                    attempt=attempt,
+                    prompt=self._challenge_prompt(context, retry_note),
                     schema=LLMChallengeDecision,
                 )
                 self._sleep_after_llm_call()
@@ -134,8 +140,11 @@ class DefaultLLMAgent(BaseAgent):
         last_raw = None
         for attempt in range(self.max_retries + 1):
             try:
-                raw = self.llm.prompt(
-                    self._reflection_prompt(context, retry_note),
+                raw = self._prompt_llm(
+                    context=context,
+                    phase="reflection",
+                    attempt=attempt,
+                    prompt=self._reflection_prompt(context, retry_note),
                     schema=str,
                 )
                 self._sleep_after_llm_call()
@@ -171,6 +180,24 @@ class DefaultLLMAgent(BaseAgent):
             f"{context.player_name} could not produce valid reflection memory "
             f"after {self.max_retries + 1} attempts. Last error: {last_error}"
         ) from last_error
+
+    def _prompt_llm(
+        self,
+        *,
+        context: AgentContext,
+        phase: str,
+        attempt: int,
+        prompt: str,
+        schema: type,
+    ):
+        chat_name = f"liarsbar-{context.player_name}-{phase}-attempt-{attempt + 1}"
+        try:
+            from kaggle_benchmarks import chats
+        except ImportError:
+            return self.llm.prompt(prompt, schema=schema)
+
+        with chats.new(name=chat_name, orphan=False):
+            return self.llm.prompt(prompt, schema=schema)
 
     @staticmethod
     def _parse_reflection(raw: Any, context: AgentContext) -> dict[str, str]:
